@@ -34,7 +34,8 @@
 	 process_iq/1,
 	 get_mix_roster_items/2,
 	 webadmin_user/4,
-	 webadmin_page/3]).
+	 webadmin_page/3,
+	 get_mix_roster_items/2]).
 
 -include_lib("xmpp/include/xmpp.hrl").
 -include("logger.hrl").
