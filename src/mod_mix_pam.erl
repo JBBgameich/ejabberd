@@ -62,6 +62,8 @@ start(Host, Opts) ->
 	    ejabberd_hooks:add(disco_sm_features, Host, ?MODULE, disco_sm_features, 50),
 	    ejabberd_hooks:add(remove_user, Host, ?MODULE, remove_user, 50),
 	    gen_iq_handler:add_iq_handler(ejabberd_sm, Host, ?NS_MIX_PAM_0,
+					  ?MODULE, process_iq),
+	    gen_iq_handler:add_iq_handler(ejabberd_sm, Host, ?NS_MIX_PAM_2,
 					  ?MODULE, process_iq);
 	Err ->
 	    Err
@@ -71,7 +73,8 @@ stop(Host) ->
     ejabberd_hooks:delete(bounce_sm_packet, Host, ?MODULE, bounce_sm_packet, 50),
     ejabberd_hooks:delete(disco_sm_features, Host, ?MODULE, disco_sm_features, 50),
     ejabberd_hooks:delete(remove_user, Host, ?MODULE, remove_user, 50),
-    gen_iq_handler:remove_iq_handler(ejabberd_sm, Host, ?NS_MIX_PAM_0).
+    gen_iq_handler:remove_iq_handler(ejabberd_sm, Host, ?NS_MIX_PAM_0),
+    gen_iq_handler:remove_iq_handler(ejabberd_sm, Host, ?NS_MIX_PAM_2).
 
 reload(Host, NewOpts, OldOpts) ->
     NewMod = gen_mod:db_mod(NewOpts, ?MODULE),
@@ -231,7 +234,7 @@ remove_user(LUser, LServer) ->
 -spec process_join(iq()) -> ignore.
 process_join(#iq{from = From,
 		 sub_els = [#mix_client_join{channel = Channel,
-					     join = Join}]} = IQ) ->
+		                             join = Join}]} = IQ) ->
     ejabberd_router:route_iq(
       #iq{from = jid:remove_resource(From),
 	  to = Channel, type = set, sub_els = [Join]},
@@ -255,13 +258,13 @@ process_leave(#iq{from = From,
 
 -spec process_join_result(iq(), iq()) -> ok.
 process_join_result(#iq{from = Channel,
-			type = result, sub_els = [#mix_join{id = ID} = Join]},
+			type = result, sub_els = [#mix_join{id = ID, xmlns = XmlNs} = Join]},
 		    #iq{to = To} = IQ) ->
     case add_channel(To, Channel, ID) of
 	ok ->
 	    ChanID = make_channel_id(Channel, ID),
 	    Join1 = Join#mix_join{id = <<"">>, jid = ChanID},
-	    ResIQ = xmpp:make_iq_result(IQ, #mix_client_join{join = Join1}),
+	    ResIQ = xmpp:make_iq_result(IQ, #mix_client_join{join = Join1, xmlns = XmlNs}),
 	    ejabberd_router:route(ResIQ);
 	{error, db_failure} ->
 	    ejabberd_router:route_error(IQ, db_error(IQ))
@@ -270,8 +273,8 @@ process_join_result(Err, IQ) ->
     process_iq_error(Err, IQ).
 
 -spec process_leave_result(iq(), iq()) -> ok.
-process_leave_result(#iq{type = result, sub_els = [#mix_leave{} = Leave]}, IQ) ->
-    ResIQ = xmpp:make_iq_result(IQ, #mix_client_leave{leave = Leave}),
+process_leave_result(#iq{type = result, sub_els = [#mix_leave{} = Leave, xmlns = XmlNs]}, IQ) ->
+    ResIQ = xmpp:make_iq_result(IQ, #mix_client_leave{leave = Leave, xmlns = XmlNs}),
     ejabberd_router:route(ResIQ);
 process_leave_result(Err, IQ) ->
     process_iq_error(Err, IQ).
