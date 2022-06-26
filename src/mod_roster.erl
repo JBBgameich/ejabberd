@@ -275,7 +275,7 @@ write_roster_version(LUser, LServer, InTransaction) ->
 %%     - the roster version from client don't match current version.
 -spec process_iq_get(iq()) -> iq().
 process_iq_get(#iq{to = To,
-		   sub_els = [#roster_query{ver = RequestedVersion}]} = IQ) ->
+		   sub_els = [#roster_query{ver = RequestedVersion, mix_annotate = MixAnnotate}]} = IQ) ->
     LUser = To#jid.luser,
     LServer = To#jid.lserver,
     US = {LUser, LServer},
@@ -313,9 +313,21 @@ process_iq_get(#iq{to = To,
 			     roster_get, To#jid.lserver, [], [US])),
 		 false}
 	end,
+    % don't include <channel/> element when MIX annotate is disabled
+    Items = case ItemsToSend of
+	false -> false;
+	I -> case MixAnnotate of
+	    undefined ->
+		lists:map(
+		    fun(Item) ->
+			Item#roster_item{mix_channel = undefined}
+		    end, I);
+	    #mix_roster_annotate{} -> I
+	end
+    end,
     xmpp:make_iq_result(
       IQ,
-      case {ItemsToSend, VersionToSend} of
+      case {Items, VersionToSend} of
 	  {false, false} ->
 	      undefined;
 	  {Items, false} ->
