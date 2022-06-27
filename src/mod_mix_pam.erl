@@ -312,7 +312,7 @@ process_join_result(#iq{from = Channel,
 	{error, db_failure} ->
 	    ejabberd_router:route_error(IQ, db_error(IQ))
     end;
-process_join_result(Err, IQ) ->
+process_join_result(#iq{type = error} = Err, IQ) ->
     process_iq_error(Err, IQ).
 
 -spec process_leave_result(iq(), iq()) -> ok.
