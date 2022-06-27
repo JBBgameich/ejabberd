@@ -421,7 +421,7 @@ process_mix_join(#iq{to = To, from = From,
 		ok = Mod:set_participant(ServerHost, Chan, Host, BFrom, ID, Nick),
 		ok = Mod:subscribe(ServerHost, Chan, Host, BFrom, Nodes),
 		notify_participant_joined(Mod, ServerHost, To, From, ID, Nick),
-		ParticipantLuser = <<ID, "#", Chan>>,
+		ParticipantLuser = erlang:iolist_to_binary([ID, <<"#">>, Chan]),
 		xmpp:make_iq_result(IQ, #mix_join{id = ID,
 						  subscribe = Nodes,
 						  jid = To#jid {
