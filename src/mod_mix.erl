@@ -425,7 +425,7 @@ process_mix_join(#iq{to = To, from = From,
 		xmpp:make_iq_result(IQ, #mix_join{id = ID,
 						  subscribe = Nodes,
 						  jid = To#jid {
-							   luser = ParticipantLuser
+							   user = ParticipantLuser
 						  },
 						  nick = Nick})
 	    catch _:{badmatch, {error, db_failure}} ->
@@ -602,10 +602,12 @@ filter_nodes(Nodes) ->
 -spec multicast(module(), binary(), binary(),
 		binary(), binary(), fun((jid()) -> message())) -> ok.
 multicast(Mod, LServer, Chan, Service, Node, F) ->
+    ?LOG_INFO("Brotkasting", []),
     case Mod:get_subscribed(LServer, Chan, Service, Node) of
 	{ok, Subscribers} ->
 	    lists:foreach(
 	      fun(To) ->
+		      ?LOG_INFO("Das ist eine message ~ts", [To]),
 		      Msg = xmpp:set_to(F(To), To),
 		      ejabberd_router:route(Msg)
 	      end, Subscribers);
