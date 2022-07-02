@@ -600,12 +600,10 @@ filter_nodes(Nodes) ->
 -spec multicast(module(), binary(), binary(),
 		binary(), binary(), fun((jid()) -> message())) -> ok.
 multicast(Mod, LServer, Chan, Service, Node, F) ->
-    ?LOG_INFO("Brotkasting", []),
     case Mod:get_subscribed(LServer, Chan, Service, Node) of
 	{ok, Subscribers} ->
 	    lists:foreach(
 	      fun(To) ->
-		      ?LOG_INFO("Das ist eine message ~ts", [To]),
 		      Msg = xmpp:set_to(F(To), To),
 		      ejabberd_router:route(Msg)
 	      end, Subscribers);
