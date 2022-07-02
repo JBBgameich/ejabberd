@@ -269,7 +269,17 @@ process_join(#iq{from = From,
     ejabberd_router:route_iq(
       #iq{from = jid:remove_resource(From),
 	  to = Channel, type = set, sub_els = [Join]},
-      fun(ResIQ) -> process_join_result(ResIQ, IQ) end),
+      fun(#iq{sub_els = [El]} = ResIQ) -> 
+        try xmpp:decode(El) of
+            MixJoin -> 
+                ?LOG_INFO("Moin this is le element", []),
+                process_join_result(ResIQ#iq {
+                    sub_els = [MixJoin]
+                }, IQ)
+        catch
+            _:{xmpp_codec, Reason} -> io:format("Kaputt")
+        end
+      end),
     ignore.
 
 -spec process_leave(iq()) -> iq() | error.
